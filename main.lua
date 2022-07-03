@@ -8,9 +8,31 @@ aviao = {
     altura = 64,
     x = LARG_TELA / 2 - 32,
     y = ALT_TELA - 64,
+    tiros = {}
 }
 
+function darTiro()
+    local tiro = {
+        x = aviao.x + aviao.largura / 2 - 2,
+        y = aviao.y,
+        largura = 16,
+        altura = 16,
+    }
+    table.insert(aviao.tiros, tiro)
+end    
+
+function moveTiros()
+    for i = # aviao.tiros, 1, -1 do
+        if aviao.tiros[i].y > 0 then
+            aviao.tiros[i].y = aviao.tiros[i].y - 1
+        else
+            table.remove(aviao.tiros, i)
+        end
+    end
+end
+
 function destroyAviao()
+    mus_explosao:play()
     aviao.src = "assets/explosao_nave.png"
     aviao.img = love.graphics.newImage(aviao.src)
     aviao.largura = 55
@@ -68,9 +90,15 @@ function moveAviao()
     end
 end
 
+function trocaMusica()
+    mus_ambiente:stop()
+    mus_game_over:play()
+end    
+
 function checkColisao()
     for k, meteoro in pairs(meteoros) do
         if colisao(meteoro.x, meteoro.y, meteoro.largura, meteoro.altura, aviao.x, aviao.y, aviao.largura, aviao.altura) then
+            trocaMusica()
             destroyAviao()
             FIM_JOGO = true
         end
@@ -89,6 +117,15 @@ function love.load()
     aviao.img = love.graphics.newImage(aviao.src)
 
     meteoroImg = love.graphics.newImage("assets/meteoro.png")
+    tiroImg = love.graphics.newImage("assets/tiro.png")
+
+    mus_ambiente = love.audio.newSource("assets/audios/ambiente.wav", "static")
+    mus_ambiente:setLooping(true)
+    mus_ambiente:play()
+
+    mus_explosao = love.audio.newSource("assets/audios/destruicao.wav", "static")
+
+    mus_game_over = love.audio.newSource("assets/audios/game_over.wav", "static")   
 end
 
 function love.update(dt)
@@ -102,8 +139,16 @@ function love.update(dt)
             criaMeteoro()
         end
         moveMeteoro()
-
+        moveTiros()
         checkColisao()
+    end
+end
+
+function love.keypressed(tecla)
+    if tecla == "escape" then
+        love.event.quit()
+    elseif tecla == "space" then
+        darTiro()
     end
 end
 
@@ -115,4 +160,7 @@ function love.draw()
         love.graphics.draw(meteoroImg, meteoro.x, meteoro.y)
     end
 
+    for k, tiro in ipairs(aviao.tiros) do
+        love.graphics.draw(tiroImg, tiro.x, tiro.y)
+    end
 end
