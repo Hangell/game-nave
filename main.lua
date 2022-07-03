@@ -1,6 +1,9 @@
 LARG_TELA = 320
 ALT_TELA = 480
 MAX_METEOROS = 20
+PONTUACAO = 0
+PONTUACAO_MAX = 100
+VENCEDOR = false
 --Aviao
 aviao = {
     src = "assets/14bis.png",
@@ -12,17 +15,18 @@ aviao = {
 }
 
 function darTiro()
+    mus_shot:play()
     local tiro = {
-        x = aviao.x + aviao.largura / 2 - 2,
+        x = aviao.x + aviao.largura / 2,
         y = aviao.y,
         largura = 16,
         altura = 16,
     }
     table.insert(aviao.tiros, tiro)
-end    
+end
 
 function moveTiros()
-    for i = # aviao.tiros, 1, -1 do
+    for i = #aviao.tiros, 1, -1 do
         if aviao.tiros[i].y > 0 then
             aviao.tiros[i].y = aviao.tiros[i].y - 1
         else
@@ -93,15 +97,43 @@ end
 function trocaMusica()
     mus_ambiente:stop()
     mus_game_over:play()
-end    
+end
 
-function checkColisao()
+function checkColisaoAviao()
     for k, meteoro in pairs(meteoros) do
         if colisao(meteoro.x, meteoro.y, meteoro.largura, meteoro.altura, aviao.x, aviao.y, aviao.largura, aviao.altura) then
             trocaMusica()
             destroyAviao()
             FIM_JOGO = true
         end
+    end
+end
+
+function checkColisaoTiros()
+    for i = #aviao.tiros, 1, -1 do
+        for j = #meteoros, 1, -1 do
+            if colisao(aviao.tiros[i].x, aviao.tiros[i].y, aviao.tiros[i].largura, aviao.tiros[i].altura, 
+                        meteoros[j].x, meteoros[j].y, meteoros[j].largura, meteoros[j].altura) then
+                        PONTUACAO = PONTUACAO + 1    
+                table.remove(aviao.tiros, i)
+                table.remove(meteoros, j)
+                break
+            end
+
+        end
+    end
+end    
+
+function checkColisao()
+    checkColisaoAviao()
+    checkColisaoTiros()
+end
+
+function checaObjetivo()
+    if PONTUACAO >= PONTUACAO_MAX then
+        VENCEDOR = true
+        mus_ambiente:stop()
+        mus_vencedor:play()
     end
 end
 
@@ -118,6 +150,8 @@ function love.load()
 
     meteoroImg = love.graphics.newImage("assets/meteoro.png")
     tiroImg = love.graphics.newImage("assets/tiro.png")
+    gameOverImg = love.graphics.newImage("assets/gameover.png")
+    vencedorImg = love.graphics.newImage("assets/vencedor.png")
 
     mus_ambiente = love.audio.newSource("assets/audios/ambiente.wav", "static")
     mus_ambiente:setLooping(true)
@@ -125,11 +159,15 @@ function love.load()
 
     mus_explosao = love.audio.newSource("assets/audios/destruicao.wav", "static")
 
-    mus_game_over = love.audio.newSource("assets/audios/game_over.wav", "static")   
+    mus_game_over = love.audio.newSource("assets/audios/game_over.wav", "static")
+
+    mus_shot = love.audio.newSource("assets/audios/disparo.wav", "static")
+
+    mus_vencedor = love.audio.newSource("assets/audios/winner.wav", "static")
 end
 
 function love.update(dt)
-    if not FIM_JOGO then
+    if not FIM_JOGO and not VENCEDOR then
         if love.keyboard.isDown('w', 'up', 's', 'down', 'a', 'left', 'd', 'right') then
             moveAviao()
         end
@@ -141,6 +179,7 @@ function love.update(dt)
         moveMeteoro()
         moveTiros()
         checkColisao()
+        checaObjetivo()
     end
 end
 
@@ -150,11 +189,15 @@ function love.keypressed(tecla)
     elseif tecla == "space" then
         darTiro()
     end
+
 end
 
 function love.draw()
     love.graphics.draw(background, 0, 0)
     love.graphics.draw(aviao.img, aviao.x, aviao.y)
+
+
+    love.graphics.print("Pontuação: " .. PONTUACAO, 10, 10)
 
     for k, meteoro in ipairs(meteoros) do
         love.graphics.draw(meteoroImg, meteoro.x, meteoro.y)
@@ -162,5 +205,13 @@ function love.draw()
 
     for k, tiro in ipairs(aviao.tiros) do
         love.graphics.draw(tiroImg, tiro.x, tiro.y)
+    end
+
+    if FIM_JOGO then
+        love.graphics.draw(gameOverImg, LARG_TELA / 2 - gameOverImg:getWidth() / 2, ALT_TELA / 2 - gameOverImg:getHeight() / 2)
+    end
+
+    if VENCEDOR then
+        love.graphics.draw(vencedorImg, LARG_TELA / 2 - vencedorImg:getWidth() / 2, ALT_TELA / 2 - vencedorImg:getHeight() / 2)
     end
 end
