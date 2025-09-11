@@ -7,6 +7,7 @@ If you found this library helpful, please consider:
 - 💰 Supporting via Pix: rodrigo@hangell.org
 
 ## 👨‍💻 Author
+
 <div align="center">
 
 ![Rodrigo Rangel](https://avatars.githubusercontent.com/u/53544561?v=4)
